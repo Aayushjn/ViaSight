@@ -10,6 +10,8 @@ const val INTENT_ACTION_NOTIFICATION = "NotificationIntentActionFilter"
 
 const val EXTRA_NOTIFICATION = "NotificationExtra"
 
+const val UTTERANCE_ID_NOTIFICATION = "NotificationInfoUtteranceId"
+
 const val COMMAND_CLEAR_NOTIFICATIONS = "ClearNotifications"
 const val COMMAND_LIST_NOTIFICATIONS = "ListNotifications"
 
