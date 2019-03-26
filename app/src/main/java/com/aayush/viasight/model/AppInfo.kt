@@ -11,14 +11,21 @@ import com.aayush.viasight.util.writeTypedObjectCompat
 class AppInfo(
     var appName: String,
     var packageName: String,
-    var icon: Drawable,
-    var launchIntent: Intent
+    var icon: Drawable?,
+    var launchIntent: Intent?
 ): KParcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readValue(Drawable::class.java.classLoader) as Drawable,
         parcel.readTypedObjectCompat(parcelableCreator { Intent() })!!
+    )
+
+    constructor(): this(
+        "",
+        "",
+        null,
+        null
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) = with(parcel) {

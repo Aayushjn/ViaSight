@@ -15,5 +15,5 @@ const val UTTERANCE_ID_NOTIFICATION = "NotificationInfoUtteranceId"
 const val COMMAND_CLEAR_NOTIFICATIONS = "ClearNotifications"
 const val COMMAND_LIST_NOTIFICATIONS = "ListNotifications"
 
-const val MIN_SWIPE_DISTANCE_Y = 100.0.toFloat()
-const val MAX_SWIPE_DISTANCE_Y = 1000.0.toFloat()
+const val MIN_SWIPE_DISTANCE_Y = 100f
+const val MAX_SWIPE_DISTANCE_Y = 1000f

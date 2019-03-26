@@ -6,10 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GestureDetectorCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.aayush.viasight.R
 import com.aayush.viasight.model.NotificationInfo
@@ -23,7 +23,7 @@ import java.util.*
 class MainActivity: AppCompatActivity() {
     private var notifications = mutableListOf<NotificationInfo>()
     private var tts: TextToSpeech? = null
-    private lateinit var gestureDetector: GestureDetectorCompat
+    private lateinit var gestureDetector: GestureDetector
 
     private val onNotice = object: BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -40,7 +40,7 @@ class MainActivity: AppCompatActivity() {
 
         val gestureListener = SwipeGestureListener()
         gestureListener.setActivity(this)
-        gestureDetector = GestureDetectorCompat(this, gestureListener)
+        gestureDetector = GestureDetector(this, gestureListener)
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(onNotice, IntentFilter(INTENT_ACTION_NOTIFICATION))
     }
@@ -52,6 +52,7 @@ class MainActivity: AppCompatActivity() {
             if (it.isSpeaking) {
                 it.stop()
             }
+            it.shutdown()
         }
     }
 
@@ -61,18 +62,29 @@ class MainActivity: AppCompatActivity() {
         tts?.shutdown()
     }
 
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        gestureDetector.onTouchEvent(ev)
+        return true
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         gestureDetector.onTouchEvent(event)
         return true
     }
 
     fun initAudioRecord() {
-
+        Timber.d("Starting audio recording!")
     }
 
     fun readNotifications() {
+        Timber.d("Initializing TTS!")
         if (!notifications.isEmpty()) {
-            notifications.forEach { if (it.isRead) notifications.remove(it) }
+            Timber.d(notifications.toString())
+            val iterator = notifications.iterator()
+            while (iterator.hasNext()) {
+                if (iterator.next().isRead) iterator.remove()
+            }
+            Timber.d(notifications.toString())
             tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                 if (it == TextToSpeech.SUCCESS) {
                     val result = this.tts?.setLanguage(Locale.ENGLISH)
@@ -80,10 +92,18 @@ class MainActivity: AppCompatActivity() {
                         Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                     }
                     else {
-                        for (notification in notifications) {
-                            tts?.speak(notification.toString(), TextToSpeech.QUEUE_FLUSH, null,
-                                UTTERANCE_ID_NOTIFICATION)
-                            notification.isRead = true
+                        if (notifications.isEmpty()) {
+                            tts?.speak("You do not have any pending notifications", TextToSpeech.QUEUE_FLUSH,
+                                null, UTTERANCE_ID_NOTIFICATION)
+                        }
+                        else {
+                            for (notification in notifications) {
+                                tts?.speak(
+                                    notification.toString(), TextToSpeech.QUEUE_FLUSH, null,
+                                    UTTERANCE_ID_NOTIFICATION
+                                )
+                                notification.isRead = true
+                            }
                         }
                     }
                 }
@@ -95,6 +115,8 @@ class MainActivity: AppCompatActivity() {
     }
 
     fun stopReadingNotifications() {
+        Timber.d("Stopping TTS")
+
         tts?.let {
             if (it.isSpeaking) {
                 it.stop()

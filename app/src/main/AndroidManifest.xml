@@ -12,7 +12,12 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
             tools:ignore="AllowBackup,GoogleAppIndexingWarning">
-        <activity android:name=".view.MainActivity">
+        <activity android:name=".view.MainActivity"
+                  android:clearTaskOnLaunch="true"
+                  android:excludeFromRecents="true"
+                  android:launchMode="singleTask"
+                  android:screenOrientation="portrait"
+                  android:stateNotNeeded="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.DEFAULT" />

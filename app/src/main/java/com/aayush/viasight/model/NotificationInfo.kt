@@ -1,17 +1,15 @@
 package com.aayush.viasight.model
 
 import android.os.Parcel
-import com.aayush.viasight.util.KParcelable
-import com.aayush.viasight.util.parcelableCreator
-import com.aayush.viasight.util.readBoolean
-import com.aayush.viasight.util.writeBoolean
+import com.aayush.viasight.util.*
+import java.util.*
 
 data class NotificationInfo(
     var packageName: String,
     var tickerText: String,
     var title: String,
     var text: String,
-    var time: Long
+    var date: Date
 ): KParcelable {
     var isRead = false
 
@@ -20,7 +18,7 @@ data class NotificationInfo(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readString()!!,
-        parcel.readLong()
+        parcel.readDate()!!
     ) {
         isRead = parcel.readBoolean()
     }
@@ -30,7 +28,7 @@ data class NotificationInfo(
         writeString(tickerText)
         writeString(title)
         writeString(text)
-        writeLong(time)
+        writeDate(date)
         writeBoolean(isRead)
     }
 

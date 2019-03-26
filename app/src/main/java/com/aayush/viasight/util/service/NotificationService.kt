@@ -21,7 +21,7 @@ class NotificationService: NotificationListenerService() {
             notification?.tickerText.toString(),
             extras?.getString("android.title") ?: "Unknown title",
             extras?.getString("android.text") ?: "Unknown text",
-            notification?.`when` ?: sbn?.postTime ?: Date().time
+            notification?.`when`?.let { Date(it) } ?: sbn?.postTime?.let { Date(it) } ?: Date()
         )
 
         val receivedNotification = Intent(INTENT_ACTION_NOTIFICATION)

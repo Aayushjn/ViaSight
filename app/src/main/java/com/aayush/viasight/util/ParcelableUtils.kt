@@ -2,7 +2,9 @@ package com.aayush.viasight.util
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.util.*
 
+// Parcelable Creator helper
 inline fun <reified T> parcelableCreator(
     crossinline create: (Parcel) -> T) =
     object: Parcelable.Creator<T> {
@@ -11,18 +13,7 @@ inline fun <reified T> parcelableCreator(
         override fun newArray(size: Int) = arrayOfNulls<T>(size)
     }
 
-inline fun <reified T> parcelableClassLoaderCreator(
-    crossinline create: (Parcel, ClassLoader) -> T) =
-    object: Parcelable.ClassLoaderCreator<T> {
-        override fun createFromParcel(source: Parcel, loader: ClassLoader) =
-            create(source, loader)
-
-        override fun createFromParcel(source: Parcel) =
-            createFromParcel(source, T::class.java.classLoader!!)
-
-        override fun newArray(size: Int) = arrayOfNulls<T>(size)
-    }
-
+// Parcel extensions
 fun Parcel.readBoolean() = readInt() == 1
 
 fun Parcel.writeBoolean(`val`: Boolean) = writeInt(if (`val`) 1 else 0)
@@ -45,6 +36,13 @@ fun <T: Parcelable> Parcel.readTypedObjectCompat(creator: Parcelable.Creator<T>)
 fun <T: Parcelable> Parcel.writeTypedObjectCompat(`val`: T?, flags: Int) =
     writeNullable(`val`) { it.writeToParcel(this, flags) }
 
+fun Parcel.readDate() =
+    readNullable { Date(readLong()) }
+
+fun Parcel.writeDate(value: Date?) =
+    writeNullable(value) { writeLong(it.time) }
+
+// Parcelable default interface
 interface KParcelable: Parcelable {
     override fun writeToParcel(parcel: Parcel, flags: Int)
 

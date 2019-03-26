@@ -2,12 +2,10 @@ package com.aayush.viasight.util.listener
 
 import android.view.GestureDetector
 import android.view.MotionEvent
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.aayush.viasight.util.MAX_SWIPE_DISTANCE_Y
 import com.aayush.viasight.util.MIN_SWIPE_DISTANCE_Y
 import com.aayush.viasight.view.MainActivity
-import timber.log.Timber
 import kotlin.math.absoluteValue
 
 class SwipeGestureListener: GestureDetector.SimpleOnGestureListener() {
@@ -21,25 +19,20 @@ class SwipeGestureListener: GestureDetector.SimpleOnGestureListener() {
 
         if (deltaYAbs in MIN_SWIPE_DISTANCE_Y..MAX_SWIPE_DISTANCE_Y) {
             if (deltaY > 0) {
-                Toast.makeText(activity, "Swiped up", Toast.LENGTH_SHORT).show()
                 (activity as MainActivity).initAudioRecord()
             }
             else if (deltaY < 0) {
-                Timber.d("Swiped down")
                 if (swipedOnce) {
+                    swipedOnce = false
                     (activity as MainActivity).stopReadingNotifications()
                 }
                 else {
+                    swipedOnce = true
                     (activity as MainActivity).readNotifications()
                 }
             }
         }
 
-        return true
-    }
-
-    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-        Timber.d("Single tap")
         return true
     }
 
