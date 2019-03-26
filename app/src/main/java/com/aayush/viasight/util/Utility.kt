@@ -2,8 +2,6 @@ package com.aayush.viasight.util
 
 import android.content.pm.PackageManager
 import com.aayush.viasight.model.AppInfo
-import java.text.SimpleDateFormat
-import java.util.*
 
 fun getInstalledApps(packageManager: PackageManager): List<AppInfo> {
     val res = mutableListOf<AppInfo>()
@@ -20,10 +18,4 @@ fun getInstalledApps(packageManager: PackageManager): List<AppInfo> {
         res.add(appInfo)
     }
     return res
-}
-
-fun formatDate(date: Date, is24Hour: Boolean): String {
-    val format = if (is24Hour) "dd/MM/yyyy HH:mm" else "dd/MM/yyyy hh:mm aa"
-
-    return SimpleDateFormat(format, Locale.US).format(date)
 }
