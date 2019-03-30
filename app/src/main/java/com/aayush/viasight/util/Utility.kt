@@ -19,7 +19,7 @@ fun getInstalledApps(packageManager: PackageManager): List<AppInfo> {
             app.nonLocalizedLabel.toString()
         }
         else {
-            "Unknown"
+            app.name.substring(app.name.indexOf("."))
         }
         appInfo.packageName = app.packageName
         appInfo.icon = app.loadIcon(packageManager)!!
