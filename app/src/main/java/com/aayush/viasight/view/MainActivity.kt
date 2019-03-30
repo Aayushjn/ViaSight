@@ -338,6 +338,23 @@ class MainActivity: AppCompatActivity() {
                     }
                 })
             }
+            else if (match.indexOf("date", ignoreCase = true) != -1) {
+                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        val result = this.tts?.setLanguage(Locale.ENGLISH)
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+                        }
+                        else {
+                            speak("The time is ${DateUtils.formatDateTime(this, Date().time,
+                                DateUtils.FORMAT_SHOW_DATE)}")
+                        }
+                    }
+                    else {
+                        Timber.e("Initialization failed")
+                    }
+                })
+            }
         }
         else if (match.indexOf("call", ignoreCase = true) != -1) {
             val contacts = getContacts(contentResolver)
