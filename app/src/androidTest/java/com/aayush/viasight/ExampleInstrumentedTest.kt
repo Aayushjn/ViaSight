@@ -2,6 +2,7 @@ package com.aayush.viasight
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.aayush.viasight.util.getContacts
 import com.aayush.viasight.util.getInstalledApps
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -20,5 +21,11 @@ class ExampleInstrumentedTest {
     fun appList_listIsNotNull_returnsList() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertNotNull(getInstalledApps(context.packageManager))
+    }
+
+    @Test
+    fun contactList_listIsNotNull_returnsList() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertNotNull(getContacts(context.contentResolver))
     }
 }

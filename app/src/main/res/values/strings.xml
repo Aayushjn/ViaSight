@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ViaSight</string>
+    <string name="tutorial_string">Swipe down to read notifications. Swipe up to enable voice commands. Say something like \'Call Raj\' or \'Open WhatsApp\'.</string>
 </resources>

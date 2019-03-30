@@ -19,7 +19,7 @@ class SwipeGestureListener: GestureDetector.SimpleOnGestureListener() {
 
         if (deltaYAbs in MIN_SWIPE_DISTANCE_Y..MAX_SWIPE_DISTANCE_Y) {
             if (deltaY > 0) {
-                (activity as MainActivity).initAudioRecord()
+                (activity as MainActivity).initSpeechRecognition()
             }
             else if (deltaY < 0) {
                 if (swipedOnce) {

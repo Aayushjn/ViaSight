@@ -3,6 +3,11 @@
           xmlns:tools="http://schemas.android.com/tools"
           package="com.aayush.viasight">
 
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+
     <application
             android:name=".ViaSightApplication"
             android:allowBackup="true"
@@ -15,7 +20,6 @@
         <activity android:name=".view.MainActivity"
                   android:clearTaskOnLaunch="true"
                   android:excludeFromRecents="true"
-                  android:launchMode="singleTask"
                   android:screenOrientation="portrait"
                   android:stateNotNeeded="true">
             <intent-filter>
