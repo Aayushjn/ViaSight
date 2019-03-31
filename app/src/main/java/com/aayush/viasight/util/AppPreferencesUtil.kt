@@ -3,7 +3,7 @@ package com.aayush.viasight.util
 import android.content.SharedPreferences
 
 fun isLaunchedFirstTime(sharedPreferences: SharedPreferences) =
-    sharedPreferences.getBoolean(PREF_IS_TUTORIAL_COMPLETED, false)
+    sharedPreferences.getBoolean(PREF_IS_TUTORIAL_COMPLETED, true)
 
-fun setTutorialCompleted(sharedPreferences: SharedPreferences) =
-    sharedPreferences.edit().putBoolean(PREF_IS_TUTORIAL_COMPLETED, true).apply()
+fun setLaunchedFirstTime(sharedPreferences: SharedPreferences) =
+    sharedPreferences.edit().putBoolean(PREF_IS_TUTORIAL_COMPLETED, false).apply()

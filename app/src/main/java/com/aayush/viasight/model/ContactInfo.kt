@@ -8,7 +8,7 @@ data class ContactInfo(
     var id: String,
     var name: String,
     var phoneNumber: String
-): KParcelable {
+): KParcelable, Comparable<ContactInfo> {
     constructor(parcel: Parcel): this(
         parcel.readString()!!,
         parcel.readString()!!,
@@ -26,6 +26,9 @@ data class ContactInfo(
         writeString(name)
         writeString(phoneNumber)
     }
+
+    override fun compareTo(other: ContactInfo) =
+        compareValuesBy(this, other, { it.name }, { it.id })
 
     companion object {
         @JvmField val CREATOR = parcelableCreator(::ContactInfo)

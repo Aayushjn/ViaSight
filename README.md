@@ -13,3 +13,10 @@ ViaSight currently supports voice commands like the following:
 * **_call_** <contact_name>
 * **_remove_** _notifications_
 * **_play_** _tutorial_
+* **_set_** _volume_ _silent_/_vibrate_/_normal_
+
+Permissions required:
+* Vibrate
+* Record Audio
+* Call phone
+* Read contacts

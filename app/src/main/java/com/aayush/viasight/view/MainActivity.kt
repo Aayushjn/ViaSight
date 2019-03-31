@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -105,7 +106,7 @@ class MainActivity: AppCompatActivity() {
         checkPermissions()
         if (isLaunchedFirstTime(sharedPreferences)) {
             startTutorial()
-            setTutorialCompleted(sharedPreferences)
+            setLaunchedFirstTime(sharedPreferences)
         }
 
         val gestureListener = SwipeGestureListener()
@@ -264,7 +265,7 @@ class MainActivity: AppCompatActivity() {
             Timber.d(notifications.toString())
             tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                 if (it == TextToSpeech.SUCCESS) {
-                    val result = this.tts?.setLanguage(Locale.ENGLISH)
+                    val result = this.tts?.setLanguage(Locale.US)
                     if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                         Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                     }
@@ -300,7 +301,7 @@ class MainActivity: AppCompatActivity() {
     private fun startTutorial() {
         tts = TextToSpeech(this, TextToSpeech.OnInitListener {
             if (it == TextToSpeech.SUCCESS) {
-                val result = this.tts?.setLanguage(Locale.ENGLISH)
+                val result = this.tts?.setLanguage(Locale.US)
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                 }
@@ -324,7 +325,7 @@ class MainActivity: AppCompatActivity() {
             if (match?.indexOf("time", ignoreCase = true) != -1) {
                 tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                     if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.ENGLISH)
+                        val result = this.tts?.setLanguage(Locale.US)
                         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                             Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                         }
@@ -341,12 +342,12 @@ class MainActivity: AppCompatActivity() {
             else if (match.indexOf("date", ignoreCase = true) != -1) {
                 tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                     if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.ENGLISH)
+                        val result = this.tts?.setLanguage(Locale.US)
                         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                             Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                         }
                         else {
-                            speak("The time is ${DateUtils.formatDateTime(this, Date().time,
+                            speak("The date is ${DateUtils.formatDateTime(this, Date().time,
                                 DateUtils.FORMAT_SHOW_DATE)}")
                         }
                     }
@@ -358,28 +359,86 @@ class MainActivity: AppCompatActivity() {
         }
         else if (match.indexOf("call", ignoreCase = true) != -1) {
             val contacts = getContacts(contentResolver)
-            val name = match.substring(6)
+            val name = match.substring(5)
             Timber.d(name)
+            Timber.d(contacts.toString())
 
+            var contactFound = false
             contacts.forEach {
                 if (it.name == name) {
                     Timber.d(it.toString())
+                    contactFound = true
                     val callIntent = Intent(Intent.ACTION_CALL)
                     callIntent.data = Uri.parse("tel:" + it.phoneNumber)
                     startActivity(callIntent)
                 }
             }
+            if (!contactFound) {
+                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        val result = this.tts?.setLanguage(Locale.US)
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+                        }
+                        else {
+                            speak("Contact not found. Are you sure you said that right?")
+                        }
+                    }
+                    else {
+                        Timber.e("Initialization failed")
+                    }
+                })
+            }
         }
         else if (match.indexOf("open", ignoreCase = true) != -1) {
             val appList = getInstalledApps(packageManager)
-            val appName = match.substring(6)
+            val appName: String
+            try {
+                appName = match.substring(5)
+            }
+            catch (e: StringIndexOutOfBoundsException) {
+                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        val result = this.tts?.setLanguage(Locale.US)
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+                        }
+                        else {
+                            speak("You didn't tell the name of an app!")
+                        }
+                    }
+                    else {
+                        Timber.e("Initialization failed")
+                    }
+                })
+                return
+            }
             Timber.d(appName)
+            Timber.d(appList.toString())
 
+            var appFound = false
             appList.forEach {
                 if (it.appName == appName) {
                     Timber.d(it.toString())
+                    appFound = true
                     startActivity(it.launchIntent)
                 }
+            }
+            if (!appFound) {
+                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        val result = this.tts?.setLanguage(Locale.US)
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+                        }
+                        else {
+                            speak("App not found. Are you sure you said that right?")
+                        }
+                    }
+                    else {
+                        Timber.e("Initialization failed")
+                    }
+                })
             }
         }
         else if (match.indexOf("remove", ignoreCase = true) != -1) {
@@ -392,6 +451,16 @@ class MainActivity: AppCompatActivity() {
         else if (match.indexOf("play") != -1) {
             if (match.indexOf("tutorial") != -1) {
                 startTutorial()
+            }
+        }
+        else if (match.indexOf("set") != -1) {
+            if (match.indexOf("volume") != -1) {
+                val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                when {
+                    match.indexOf("silent") != -1 -> audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                    match.indexOf("vibrate") != -1 -> audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+                    match.indexOf("normal") != -1 -> audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                }
             }
         }
     }

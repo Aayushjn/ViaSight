@@ -65,5 +65,6 @@ fun getContacts(contentResolver: ContentResolver): List<ContactInfo> {
         }
         cursor?.close()
     }
-    return res
+
+    return res.sorted().toList()
 }
