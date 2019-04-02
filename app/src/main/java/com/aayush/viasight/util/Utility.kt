@@ -6,27 +6,19 @@ import android.provider.ContactsContract
 import com.aayush.viasight.model.AppInfo
 import com.aayush.viasight.model.ContactInfo
 
-
 fun getInstalledApps(packageManager: PackageManager): List<AppInfo> {
     val res = mutableListOf<AppInfo>()
-    val applications = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-    for (app in applications) {
-        if (packageManager.getLaunchIntentForPackage(app.packageName) == null || app.name == null) {
-            continue
-        }
-        val appInfo = AppInfo()
-        appInfo.appName = if (app.labelRes == 0) {
-            app.nonLocalizedLabel.toString()
-        }
-        else {
-            app.name.substring(app.name.indexOf("."))
-        }
-        appInfo.packageName = app.packageName
-        appInfo.icon = app.loadIcon(packageManager)!!
-        appInfo.launchIntent = packageManager.getLaunchIntentForPackage(app.packageName)
+    val packages = packageManager.getInstalledPackages(0)
+    for (pack in packages) {
+        val appInfo = AppInfo(
+            pack.applicationInfo.loadLabel(packageManager).toString(),
+            pack.packageName,
+            pack.applicationInfo.loadIcon(packageManager),
+            packageManager.getLaunchIntentForPackage(pack.packageName)
+        )
         res.add(appInfo)
     }
-    return res
+    return res.sorted().toList()
 }
 
 fun getContacts(contentResolver: ContentResolver): List<ContactInfo> {
@@ -51,20 +43,17 @@ fun getContacts(contentResolver: ContentResolver): List<ContactInfo> {
                 )
 
                 while (cursorInfo?.moveToNext() == true) {
-                    val info = ContactInfo()
-                    info.id = id
-                    info.name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                    info.phoneNumber =
+                    val info = ContactInfo(
+                        id,
+                        cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)),
                         cursorInfo.getString(cursorInfo.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-
+                    )
                     res.add(info)
                 }
-
                 cursorInfo?.close()
             }
         }
         cursor?.close()
     }
-
     return res.sorted().toList()
 }

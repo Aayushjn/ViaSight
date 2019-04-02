@@ -9,7 +9,7 @@ It has support for swipe gestures:
 
 ViaSight currently supports voice commands like the following:
 * **_open_** <app_name>
-* **_what_** is the _date_/_time_?
+* **_what_** is the _date_/_time_/_battery percentage_?
 * **_call_** <contact_name>
 * **_remove_** _notifications_
 * **_play_** _tutorial_

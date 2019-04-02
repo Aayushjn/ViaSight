@@ -9,6 +9,7 @@ class ViaSightApplication: Application() {
         super.onCreate()
 
         if (BuildConfig.DEBUG) {
+            Timber.uprootAll()
             Timber.plant(Timber.DebugTree())
         }
         else {

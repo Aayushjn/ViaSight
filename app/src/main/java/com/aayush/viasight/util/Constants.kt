@@ -8,7 +8,10 @@ const val INTENT_ACTION_NOTIFICATION = "NotificationIntentActionFilter"
 
 const val EXTRA_NOTIFICATION = "NotificationExtra"
 
-const val UTTERANCE_ID_NOTIFICATION = "NotificationInfoUtteranceId"
+const val UTTERANCE_ID_NOTIFICATION = "NotificationUtteranceId"
+const val UTTERANCE_ID_TUTORIAL = "TutorialUtteranceId"
+const val UTTERANCE_ID_DATE_TIME = "DateTimeUtteranceId"
+const val UTTERANCE_ID_MISC = "MiscUtteranceId"
 
 const val MIN_SWIPE_DISTANCE_Y = 100f
 const val MAX_SWIPE_DISTANCE_Y = 1000f

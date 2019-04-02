@@ -18,13 +18,13 @@ class ExampleInstrumentedTest {
     }
 
     @Test
-    fun appList_listIsNotNull_returnsList() {
+    fun appList_listIsNotEmpty_returnsList() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertNotEquals(getInstalledApps(context.packageManager).size, 0)
     }
 
     @Test
-    fun contactList_listIsNotNull_returnsList() {
+    fun contactList_listIsNotEmpty_returnsList() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertNotEquals(getContacts(context.contentResolver).size, 0)
     }

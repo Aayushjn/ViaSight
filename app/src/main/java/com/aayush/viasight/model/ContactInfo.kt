@@ -15,12 +15,6 @@ data class ContactInfo(
         parcel.readString()!!
     )
 
-    constructor(): this(
-        "",
-        "",
-        ""
-    )
-
     override fun writeToParcel(parcel: Parcel, flags: Int) = with(parcel) {
         writeString(id)
         writeString(name)
