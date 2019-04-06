@@ -1,6 +1,15 @@
 # ViaSight
 
-ViaSight is an accessibility Android launcher meant for visually challenged individuals. Its purpose is to allow such individuals to use their smartphones in a similar way to others by employing _sensory substitution_.
+ViaSight is an accessibility Android launcher meant for visually 
+challenged individuals. Its purpose is to allow such individuals to use 
+their smartphones in a similar way to others by employing 
+_sensory substitution_.
+
+Sensory substitution is done here by providing different vibration 
+patterns. Each pattern holds a different purpose. It helps train the 
+user to rely on haptic feedback during certain events. These events (in 
+case of the app) are incoming notifications, positive TTS responses and 
+negative TTS responses. 
 
 It has support for swipe gestures:
 * Swipe up to enable voice commands (as mentioned below)
@@ -15,7 +24,7 @@ ViaSight currently supports voice commands like the following:
 * **_play_** _tutorial_
 * **_set_** _volume_ _silent_/_vibrate_/_normal_
 
-Permissions required:
+#### Permissions required:
 * Vibrate
 * Record Audio
 * Call phone
