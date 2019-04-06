@@ -300,21 +300,28 @@ class MainActivity: AppCompatActivity() {
         }
     }
 
-    private fun startTutorial() {
-        tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-            if (it == TextToSpeech.SUCCESS) {
-                val result = this.tts?.setLanguage(Locale.US)
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+    private fun startTutorial() = initTTS(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
+
+    private fun initTTS(message: String, utteranceId: String) {
+        if (tts == null) {
+            tts = TextToSpeech(
+                this,
+                TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        val result = this.tts?.setLanguage(Locale.US)
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
+                        } else {
+                            speak(message, UTTERANCE_ID_DATE_TIME)
+                        }
+                    } else {
+                        Timber.e("Initialization failed")
+                    }
                 }
-                else {
-                    speak(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
-                }
-            }
-            else {
-                Timber.e("Initialization failed")
-            }
-        })
+            )
+        } else {
+            speak(message, utteranceId)
+        }
     }
 
     private fun speak(message: String, utteranceId: String) =
@@ -325,59 +332,28 @@ class MainActivity: AppCompatActivity() {
 
         if (match?.indexOf("what", ignoreCase = true) != -1) {
             when {
-                match?.indexOf("time", ignoreCase = true) != -1 -> tts = TextToSpeech(
-                    this,
-                    TextToSpeech.OnInitListener {
-                        if (it == TextToSpeech.SUCCESS) {
-                            val result = this.tts?.setLanguage(Locale.US)
-                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                            } else {
-                                speak("The time is ${DateUtils.formatDateTime(this, Date().time,
-                                    DateUtils.FORMAT_SHOW_TIME)}", UTTERANCE_ID_DATE_TIME)
-                            }
-                        } else {
-                            Timber.e("Initialization failed")
-                        }
-                    }
-                )
-                match.indexOf("date", ignoreCase = true) != -1 -> tts = TextToSpeech(
-                    this,
-                    TextToSpeech.OnInitListener {
-                        if (it == TextToSpeech.SUCCESS) {
-                            val result = this.tts?.setLanguage(Locale.US)
-                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                            } else {
-                                speak("The date is ${DateUtils.formatDateTime(this, Date().time,
-                                    DateUtils.FORMAT_SHOW_DATE)}", UTTERANCE_ID_DATE_TIME)
-                            }
-                        } else {
-                            Timber.e("Initialization failed")
-                        }
-                    }
-                )
+                match?.indexOf("time", ignoreCase = true) != -1 -> initTTS("The time is " +
+                        DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_TIME),
+                    UTTERANCE_ID_DATE_TIME)
+                match.indexOf("date", ignoreCase = true) != -1 -> initTTS("The date is " +
+                        DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_DATE),
+                    UTTERANCE_ID_DATE_TIME)
                 match.indexOf("battery percentage", ignoreCase = true) != -1 -> {
                     val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
                     val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                    tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-                        if (it == TextToSpeech.SUCCESS) {
-                            val result = this.tts?.setLanguage(Locale.US)
-                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                                Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                            } else {
-                                speak("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
-                            }
-                        } else {
-                            Timber.e("Initialization failed")
-                        }
-                    })
+                    initTTS("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
                 }
             }
         }
         else if (match.indexOf("call", ignoreCase = true) != -1) {
             val contacts = getContacts(contentResolver)
-            val name = match.substring(5)
+            val name: String
+            try {
+                name = match.substring(5)
+            } catch (e: StringIndexOutOfBoundsException) {
+                initTTS("You didn't tell the name of a contact!", UTTERANCE_ID_MISC)
+                return
+            }
             Timber.d(name)
             Timber.d(contacts.toString())
 
@@ -392,20 +368,7 @@ class MainActivity: AppCompatActivity() {
                 }
             }
             if (!contactFound) {
-                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-                    if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.US)
-                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                        }
-                        else {
-                            speak("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
-                        }
-                    }
-                    else {
-                        Timber.e("Initialization failed")
-                    }
-                })
+                initTTS("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         }
         else if (match.indexOf("open", ignoreCase = true) != -1) {
@@ -415,24 +378,10 @@ class MainActivity: AppCompatActivity() {
                 appName = match.substring(5)
             }
             catch (e: StringIndexOutOfBoundsException) {
-                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-                    if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.US)
-                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                        }
-                        else {
-                            speak("You didn't tell the name of an app!", UTTERANCE_ID_MISC)
-                        }
-                    }
-                    else {
-                        Timber.e("Initialization failed")
-                    }
-                })
+                initTTS("You didn't tell the name of an app!", UTTERANCE_ID_MISC)
                 return
             }
             Timber.d(appName)
-            Timber.d(appList.toString())
 
             var appFound = false
             appList.forEach {
@@ -440,23 +389,11 @@ class MainActivity: AppCompatActivity() {
                     Timber.d(it.toString())
                     appFound = true
                     startActivity(it.launchIntent)
+                    initTTS("Opening $appName", UTTERANCE_ID_MISC)
                 }
             }
             if (!appFound) {
-                tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-                    if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.US)
-                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                        }
-                        else {
-                            speak("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
-                        }
-                    }
-                    else {
-                        Timber.e("Initialization failed")
-                    }
-                })
+                initTTS("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         }
         else if (match.indexOf("remove", ignoreCase = true) != -1) {
