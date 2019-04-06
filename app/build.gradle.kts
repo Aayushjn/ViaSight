@@ -36,7 +36,7 @@ dependencies {
 
     implementation("com.jakewharton.timber:timber:4.7.1")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.1")
 
     androidTestImplementation("androidx.test.ext:junit:1.1.0")
     androidTestImplementation("androidx.test:runner:1.1.2-alpha02")

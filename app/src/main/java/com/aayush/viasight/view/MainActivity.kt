@@ -120,11 +120,11 @@ class MainActivity: AppCompatActivity() {
     override fun onPause() {
         super.onPause()
 
-        tts?.let {
-            if (it.isSpeaking) {
-                it.stop()
+        tts?.apply {
+            if (this.isSpeaking) {
+                this.stop()
             }
-            it.shutdown()
+            this.shutdown()
         }
     }
 
@@ -168,8 +168,7 @@ class MainActivity: AppCompatActivity() {
                     Toast.makeText(this, "Unable to get permission", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-        else if (requestCode == PERMISSION_CALL_PHONE) {
+        } else if (requestCode == PERMISSION_CALL_PHONE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 proceedAfterPermission()
             } else {
@@ -198,11 +197,11 @@ class MainActivity: AppCompatActivity() {
 
         if (requestCode == PERMISSION_SETTINGS_REQUEST) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
                 PackageManager.PERMISSION_GRANTED) {
-                proceedAfterPermission()
-            }
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
-                PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
+            } else {
                 proceedAfterPermission()
             }
         }
@@ -213,7 +212,11 @@ class MainActivity: AppCompatActivity() {
 
         if (sentToSettings) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
                 PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
+            } else {
                 proceedAfterPermission()
             }
         }
@@ -293,9 +296,9 @@ class MainActivity: AppCompatActivity() {
     fun stopReadingNotifications() {
         Timber.d("Stopping TTS")
 
-        tts?.let {
-            if (it.isSpeaking) {
-                it.stop()
+        tts?.apply {
+            if (this.isSpeaking) {
+                this.stop()
             }
         }
     }
@@ -344,8 +347,7 @@ class MainActivity: AppCompatActivity() {
                     initTTS("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
                 }
             }
-        }
-        else if (match.indexOf("call", ignoreCase = true) != -1) {
+        } else if (match.indexOf("call", ignoreCase = true) != -1) {
             val contacts = getContacts(contentResolver)
             val name: String
             try {
@@ -370,8 +372,7 @@ class MainActivity: AppCompatActivity() {
             if (!contactFound) {
                 initTTS("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
-        }
-        else if (match.indexOf("open", ignoreCase = true) != -1) {
+        } else if (match.indexOf("open", ignoreCase = true) != -1) {
             val appList = getInstalledApps(packageManager)
             val appName: String
             try {
@@ -395,20 +396,17 @@ class MainActivity: AppCompatActivity() {
             if (!appFound) {
                 initTTS("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
-        }
-        else if (match.indexOf("remove", ignoreCase = true) != -1) {
+        } else if (match.indexOf("remove", ignoreCase = true) != -1) {
             if (match.indexOf("notifications", ignoreCase = true) != -1) {
                 notifications.clear()
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancelAll()
             }
-        }
-        else if (match.indexOf("play") != -1) {
+        } else if (match.indexOf("play") != -1) {
             if (match.indexOf("tutorial") != -1) {
                 startTutorial()
             }
-        }
-        else if (match.indexOf("set") != -1) {
+        } else if (match.indexOf("set") != -1) {
             if (match.indexOf("volume") != -1) {
                 val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
                 when {
@@ -502,14 +500,13 @@ class MainActivity: AppCompatActivity() {
                         builder.show()
                     }
                     else -> ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE),
-                        PERMISSION_RECORD_AUDIO)
+                        PERMISSION_CALL_PHONE)
                 }
             }
             sharedPreferences.edit()
                 .putBoolean(Manifest.permission.CALL_PHONE, true)
                 .apply()
-        }
-        else {
+        } else {
             proceedAfterPermission()
         }
     }

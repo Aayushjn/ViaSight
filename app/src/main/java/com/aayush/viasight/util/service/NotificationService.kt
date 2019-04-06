@@ -18,6 +18,7 @@ import java.util.*
 
 class NotificationService: NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        Timber.d(sbn.toString())
         val notification = sbn?.notification
         val extras = notification?.extras
 

@@ -13,7 +13,6 @@ fun getInstalledApps(packageManager: PackageManager): List<AppInfo> {
         val appInfo = AppInfo(
             pack.applicationInfo.loadLabel(packageManager).toString(),
             pack.packageName,
-            pack.applicationInfo.loadIcon(packageManager),
             packageManager.getLaunchIntentForPackage(pack.packageName)
         )
         res.add(appInfo)
