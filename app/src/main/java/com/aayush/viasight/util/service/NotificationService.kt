@@ -3,8 +3,6 @@ package com.aayush.viasight.util.service
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
-import android.os.Build
-import android.os.VibrationEffect
 import android.os.Vibrator
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -12,13 +10,14 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.aayush.viasight.model.NotificationInfo
 import com.aayush.viasight.util.EXTRA_NOTIFICATION
 import com.aayush.viasight.util.INTENT_ACTION_NOTIFICATION
+import com.aayush.viasight.util.NOTIFICATION_WAVEFORM
+import com.aayush.viasight.util.vibrate
 import timber.log.Timber
 import java.util.*
 
 
 class NotificationService: NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        Timber.d(sbn.toString())
         val notification = sbn?.notification
         val extras = notification?.extras
 
@@ -38,13 +37,7 @@ class NotificationService: NotificationListenerService() {
             LocalBroadcastManager.getInstance(applicationContext)
                 .sendBroadcast(receivedNotification)
 
-            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 200, 400), -1))
-            }
-            else {
-                vibrator.vibrate(longArrayOf(0, 400, 200, 400), -1)
-            }
+            vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NOTIFICATION_WAVEFORM)
             val ringtone = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             RingtoneManager.getRingtone(applicationContext, ringtone).play()
         }

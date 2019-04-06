@@ -2,6 +2,9 @@ package com.aayush.viasight.util
 
 import android.content.ContentResolver
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.ContactsContract
 import com.aayush.viasight.model.AppInfo
 import com.aayush.viasight.model.ContactInfo
@@ -55,4 +58,13 @@ fun getContacts(contentResolver: ContentResolver): List<ContactInfo> {
         cursor?.close()
     }
     return res.sorted().toList()
+}
+
+fun vibrate(vibrator: Vibrator, waveform: LongArray) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        vibrator.vibrate(VibrationEffect.createWaveform(waveform, -1))
+    }
+    else {
+        vibrator.vibrate(waveform, -1)
+    }
 }

@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Vibrator
 import android.preference.PreferenceManager
 import android.provider.Settings
 import android.speech.RecognitionListener
@@ -28,6 +29,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.aayush.viasight.R
 import com.aayush.viasight.model.NotificationInfo
@@ -48,56 +50,7 @@ class MainActivity: AppCompatActivity() {
 
     private var sentToSettings = false
 
-    private val onNotice = object: BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val notificationInfo = intent.getParcelableExtra<NotificationInfo>(EXTRA_NOTIFICATION)
-            notifications.add(notificationInfo)
-
-            val notificationString = "Title: ${notificationInfo.title}\nText: ${notificationInfo.text}"
-            val spannableStringBuilder = SpannableStringBuilder(notificationString).apply {
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    0,
-                    6,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    6,
-                    notificationString.indexOf("\n"),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    notificationString.indexOf("Text"),
-                    notificationString.indexOf("Text") + 5,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    notificationString.indexOf("Text") + 6,
-                    notificationString.length,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-
-            val tr = TableRow(applicationContext)
-            tr.layoutParams = TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT,
-                TableRow.LayoutParams.WRAP_CONTENT
-            )
-            val textView = TextView(applicationContext)
-            textView.layoutParams =
-                TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
-            textView.textSize = 20f
-            textView.setTextColor(Color.parseColor("#000000"))
-            textView.text = spannableStringBuilder
-            tr.addView(textView)
-            tab.addView(tr)
-
-            Timber.d(notificationInfo.toString())
-        }
-    }
+    private val onNotice = NotificationBroadcastReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,10 +63,18 @@ class MainActivity: AppCompatActivity() {
             setLaunchedFirstTime(sharedPreferences)
         }
 
+        if (!NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
+                .contains(applicationContext.packageName)) {
+            Toast.makeText(this, "Enable notification access", Toast.LENGTH_SHORT).show()
+            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+
         val gestureListener = SwipeGestureListener()
         gestureListener.setActivity(this)
         gestureDetector = GestureDetector(this, gestureListener)
-        LocalBroadcastManager.getInstance(this)
+        LocalBroadcastManager.getInstance(applicationContext)
             .registerReceiver(onNotice, IntentFilter(INTENT_ACTION_NOTIFICATION))
     }
 
@@ -259,13 +220,14 @@ class MainActivity: AppCompatActivity() {
     }
 
     fun readNotifications() {
-        Timber.d("Initializing TTS!")
+        Timber.d("Reading notifications!")
         if (!notifications.isEmpty()) {
-            Timber.d(notifications.toString())
             val iterator = notifications.iterator()
             while (iterator.hasNext()) {
                 if (iterator.next().isRead) iterator.remove()
             }
+        }
+        if (!notifications.isEmpty()) {
             Timber.d(notifications.toString())
             tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                 if (it == TextToSpeech.SUCCESS) {
@@ -274,13 +236,12 @@ class MainActivity: AppCompatActivity() {
                         Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                     }
                     else {
-                        if (notifications.isEmpty()) {
-                            speak("You do not have any pending notifications", UTTERANCE_ID_NOTIFICATION)
-                        }
-                        else {
-                            for (notification in notifications) {
-                                speak("Title: ${notification.title}\nText: ${notification.text}",
-                                    UTTERANCE_ID_NOTIFICATION)
+                        for (notification in notifications) {
+                            if (!notification.isRead) {
+                                speak(
+                                    "Title: ${notification.title}\nText: ${notification.text}",
+                                    UTTERANCE_ID_NOTIFICATION
+                                )
                                 notification.isRead = true
                             }
                         }
@@ -290,6 +251,8 @@ class MainActivity: AppCompatActivity() {
                     Timber.e("Initialization failed")
                 }
             })
+        } else {
+            initTTS("You do not have any pending notifications", UTTERANCE_ID_NOTIFICATION)
         }
     }
 
@@ -303,7 +266,10 @@ class MainActivity: AppCompatActivity() {
         }
     }
 
-    private fun startTutorial() = initTTS(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
+    private fun startTutorial() {
+        vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
+        initTTS(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
+    }
 
     private fun initTTS(message: String, utteranceId: String) {
         if (tts == null) {
@@ -335,16 +301,27 @@ class MainActivity: AppCompatActivity() {
 
         if (match?.indexOf("what", ignoreCase = true) != -1) {
             when {
-                match?.indexOf("time", ignoreCase = true) != -1 -> initTTS("The time is " +
-                        DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_TIME),
-                    UTTERANCE_ID_DATE_TIME)
-                match.indexOf("date", ignoreCase = true) != -1 -> initTTS("The date is " +
-                        DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_DATE),
-                    UTTERANCE_ID_DATE_TIME)
+                match?.indexOf("time", ignoreCase = true) != -1 -> {
+                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
+                    initTTS("The time is " +
+                            DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_TIME),
+                        UTTERANCE_ID_DATE_TIME)
+                }
+                match.indexOf("date", ignoreCase = true) != -1 -> {
+                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
+                    initTTS("The date is " +
+                            DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_DATE),
+                        UTTERANCE_ID_DATE_TIME)
+                }
                 match.indexOf("battery percentage", ignoreCase = true) != -1 -> {
                     val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
                     val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
                     initTTS("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
+                }
+                else -> {
+                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
+                    initTTS("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
                 }
             }
         } else if (match.indexOf("call", ignoreCase = true) != -1) {
@@ -353,6 +330,7 @@ class MainActivity: AppCompatActivity() {
             try {
                 name = match.substring(5)
             } catch (e: StringIndexOutOfBoundsException) {
+                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
                 initTTS("You didn't tell the name of a contact!", UTTERANCE_ID_MISC)
                 return
             }
@@ -370,6 +348,7 @@ class MainActivity: AppCompatActivity() {
                 }
             }
             if (!contactFound) {
+                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
                 initTTS("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         } else if (match.indexOf("open", ignoreCase = true) != -1) {
@@ -379,6 +358,7 @@ class MainActivity: AppCompatActivity() {
                 appName = match.substring(5)
             }
             catch (e: StringIndexOutOfBoundsException) {
+                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
                 initTTS("You didn't tell the name of an app!", UTTERANCE_ID_MISC)
                 return
             }
@@ -390,10 +370,12 @@ class MainActivity: AppCompatActivity() {
                     Timber.d(it.toString())
                     appFound = true
                     startActivity(it.launchIntent)
+                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
                     initTTS("Opening $appName", UTTERANCE_ID_MISC)
                 }
             }
             if (!appFound) {
+                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
                 initTTS("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         } else if (match.indexOf("remove", ignoreCase = true) != -1) {
@@ -401,6 +383,8 @@ class MainActivity: AppCompatActivity() {
                 notifications.clear()
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancelAll()
+                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
+                initTTS("Notifications cleared", UTTERANCE_ID_NOTIFICATION)
             }
         } else if (match.indexOf("play") != -1) {
             if (match.indexOf("tutorial") != -1) {
@@ -415,6 +399,9 @@ class MainActivity: AppCompatActivity() {
                     match.indexOf("normal") != -1 -> audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
                 }
             }
+        } else {
+            vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
+            initTTS("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
         }
     }
 
@@ -513,4 +500,55 @@ class MainActivity: AppCompatActivity() {
 
     private fun proceedAfterPermission() =
         Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+
+    inner class NotificationBroadcastReceiver: BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val notificationInfo = intent.getParcelableExtra<NotificationInfo>(EXTRA_NOTIFICATION)
+            notifications.add(notificationInfo)
+
+            val notificationString = "Title: ${notificationInfo.title}\nText: ${notificationInfo.text}"
+            val spannableStringBuilder = SpannableStringBuilder(notificationString).apply {
+                setSpan(
+                    RelativeSizeSpan(2f),
+                    0,
+                    6,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(1.5f),
+                    6,
+                    notificationString.indexOf("\n"),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(2f),
+                    notificationString.indexOf("Text"),
+                    notificationString.indexOf("Text") + 5,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(1.5f),
+                    notificationString.indexOf("Text") + 6,
+                    notificationString.length,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+
+            val tr = TableRow(applicationContext)
+            tr.layoutParams = TableRow.LayoutParams(
+                TableRow.LayoutParams.MATCH_PARENT,
+                TableRow.LayoutParams.WRAP_CONTENT
+            )
+            val textView = TextView(applicationContext)
+            textView.layoutParams =
+                TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
+            textView.textSize = 20f
+            textView.setTextColor(Color.parseColor("#000000"))
+            textView.text = spannableStringBuilder
+            tr.addView(textView)
+            tab.addView(tr)
+
+            Timber.d(notificationInfo.toString())
+        }
+    }
 }

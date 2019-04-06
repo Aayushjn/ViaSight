@@ -17,3 +17,7 @@ const val MIN_SWIPE_DISTANCE_Y = 100f
 const val MAX_SWIPE_DISTANCE_Y = 1000f
 
 const val PREF_IS_TUTORIAL_COMPLETED = "IsTutorialCompletedPreference"
+
+val POSITIVE_WAVEFORM = longArrayOf(0, 150, 300, 150, 0)
+val NEGATIVE_WAVEFORM = longArrayOf(0, 150, 0, 150, 0)
+val NOTIFICATION_WAVEFORM = longArrayOf(0, 400, 200, 400, 0)
