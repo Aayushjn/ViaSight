@@ -29,6 +29,5 @@ captures/
 # IntelliJ
 .idea/tasks.xml
 .idea/gradle.xml
-.idea/assetWizardSettings.xml
 .idea/dictionaries
 
