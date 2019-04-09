@@ -23,8 +23,6 @@ import android.text.format.DateUtils
 import android.text.style.RelativeSizeSpan
 import android.view.GestureDetector
 import android.view.MotionEvent
-import android.widget.TableRow
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -62,6 +60,7 @@ class MainActivity: AppCompatActivity() {
             startTutorial()
             setLaunchedFirstTime(sharedPreferences)
         }
+        notifications = getNotifications(sharedPreferences)
 
         if (!NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
                 .contains(applicationContext.packageName)) {
@@ -87,12 +86,14 @@ class MainActivity: AppCompatActivity() {
             }
             this.shutdown()
         }
+        saveNotifications(sharedPreferences, notifications)
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
         tts?.shutdown()
+        saveNotifications(sharedPreferences, notifications)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
@@ -339,7 +340,7 @@ class MainActivity: AppCompatActivity() {
 
             var contactFound = false
             contacts.forEach {
-                if (name.equals(it.name, true)) {
+                if (name.contains(it.name, true)) {
                     Timber.d(it.toString())
                     contactFound = true
                     val callIntent = Intent(Intent.ACTION_CALL)
@@ -383,6 +384,7 @@ class MainActivity: AppCompatActivity() {
                 notifications.clear()
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancelAll()
+                textView.text = ""
                 vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
                 initTTS("Notifications cleared", UTTERANCE_ID_NOTIFICATION)
             }
@@ -506,18 +508,31 @@ class MainActivity: AppCompatActivity() {
             val notificationInfo = intent.getParcelableExtra<NotificationInfo>(EXTRA_NOTIFICATION)
             notifications.add(notificationInfo)
 
-            val notificationString = "Title: ${notificationInfo.title}\nText: ${notificationInfo.text}"
+            val notificationString = "Package: ${notificationInfo.packageName}\nTitle: ${notificationInfo.title}\n" +
+                    "Text: ${notificationInfo.text}\nTime: ${notificationInfo.date}\n\n"
             val spannableStringBuilder = SpannableStringBuilder(notificationString).apply {
                 setSpan(
                     RelativeSizeSpan(2f),
                     0,
-                    6,
+                    8,
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
                 setSpan(
                     RelativeSizeSpan(1.5f),
-                    6,
-                    notificationString.indexOf("\n"),
+                    8,
+                    notificationString.indexOf("Title"),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(2f),
+                    notificationString.indexOf("Title"),
+                    notificationString.indexOf("Title") + 6,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(1.5f),
+                    notificationString.indexOf("Title") + 6,
+                    notificationString.indexOf("Text"),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
                 setSpan(
@@ -528,25 +543,26 @@ class MainActivity: AppCompatActivity() {
                 )
                 setSpan(
                     RelativeSizeSpan(1.5f),
-                    notificationString.indexOf("Text") + 6,
+                    notificationString.indexOf("Text") + 5,
+                    notificationString.indexOf("Time"),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(2f),
+                    notificationString.indexOf("Time"),
+                    notificationString.indexOf("Time") + 5,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                setSpan(
+                    RelativeSizeSpan(1.5f),
+                    notificationString.indexOf("Time") + 5,
                     notificationString.length,
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
             }
-
-            val tr = TableRow(applicationContext)
-            tr.layoutParams = TableRow.LayoutParams(
-                TableRow.LayoutParams.MATCH_PARENT,
-                TableRow.LayoutParams.WRAP_CONTENT
-            )
-            val textView = TextView(applicationContext)
-            textView.layoutParams =
-                TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
             textView.textSize = 20f
             textView.setTextColor(Color.parseColor("#000000"))
-            textView.text = spannableStringBuilder
-            tr.addView(textView)
-            tab.addView(tr)
+            textView.text = spannableStringBuilder.insert(0, textView.text)
 
             Timber.d(notificationInfo.toString())
         }

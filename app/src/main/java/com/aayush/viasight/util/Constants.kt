@@ -13,10 +13,11 @@ const val UTTERANCE_ID_TUTORIAL = "TutorialUtteranceId"
 const val UTTERANCE_ID_DATE_TIME = "DateTimeUtteranceId"
 const val UTTERANCE_ID_MISC = "MiscUtteranceId"
 
-const val MIN_SWIPE_DISTANCE_Y = 100f
-const val MAX_SWIPE_DISTANCE_Y = 1000f
+const val MIN_SWIPE_DISTANCE_X = 100f
+const val MAX_SWIPE_DISTANCE_X = 1000f
 
 const val PREF_IS_TUTORIAL_COMPLETED = "IsTutorialCompletedPreference"
+const val PREF_NOTIFICATIONS = "NotificationsPreference"
 
 val POSITIVE_WAVEFORM = longArrayOf(0, 150, 300, 150, 0)
 val NEGATIVE_WAVEFORM = longArrayOf(0, 150, 0, 150, 0)

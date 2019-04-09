@@ -12,9 +12,9 @@ case of the app) are incoming notifications, positive TTS responses and
 negative TTS responses. 
 
 It has support for swipe gestures:
-* Swipe up to enable voice commands (as mentioned below)
-* Swipe down once to read notifications
-* Swipe down again to stop reading notifications
+* Swipe left to enable voice commands (as mentioned below)
+* Swipe right once to read notifications
+* Swipe right again to stop reading notifications
 
 ViaSight currently supports voice commands like the following:
 * **_open_** <app_name>

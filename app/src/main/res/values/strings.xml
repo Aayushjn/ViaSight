@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">ViaSight</string>
-    <string name="tutorial_string">Swipe down to read notifications. Swipe up to enable voice commands.
+    <string name="tutorial_string">Swipe right to read notifications. Swipe left to enable voice commands.
         Say something like \'Call Raj\', \'Open WhatsApp\', \'Set volume to vibrate\' or \'Remove notifications\'.
         Ask questions like \'What is the time?\'.
     </string>
