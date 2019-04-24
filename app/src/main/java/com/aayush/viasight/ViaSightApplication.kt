@@ -1,7 +1,8 @@
 package com.aayush.viasight
 
 import android.app.Application
-import com.aayush.viasight.util.NoLogTree
+import com.aayush.viasight.util.logging.DebugLogTree
+import com.aayush.viasight.util.logging.ReleaseLogTree
 import timber.log.Timber
 
 class ViaSightApplication: Application() {
@@ -10,10 +11,10 @@ class ViaSightApplication: Application() {
 
         if (BuildConfig.DEBUG) {
             Timber.uprootAll()
-            Timber.plant(Timber.DebugTree())
+            Timber.plant(DebugLogTree())
         }
         else {
-            Timber.plant(NoLogTree())
+            Timber.plant(ReleaseLogTree())
         }
     }
 }

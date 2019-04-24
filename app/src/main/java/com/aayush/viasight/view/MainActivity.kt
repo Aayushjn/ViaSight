@@ -37,7 +37,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import timber.log.Timber
 import java.util.*
 
-
 class MainActivity: AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -222,13 +221,13 @@ class MainActivity: AppCompatActivity() {
 
     fun readNotifications() {
         Timber.d("Reading notifications!")
-        if (!notifications.isEmpty()) {
+        if (notifications.isNotEmpty()) {
             val iterator = notifications.iterator()
             while (iterator.hasNext()) {
                 if (iterator.next().isRead) iterator.remove()
             }
         }
-        if (!notifications.isEmpty()) {
+        if (notifications.isNotEmpty()) {
             Timber.d(notifications.toString())
             tts = TextToSpeech(this, TextToSpeech.OnInitListener {
                 if (it == TextToSpeech.SUCCESS) {
@@ -282,7 +281,7 @@ class MainActivity: AppCompatActivity() {
                         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                             Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
                         } else {
-                            speak(message, UTTERANCE_ID_DATE_TIME)
+                            speak(message, utteranceId)
                         }
                     } else {
                         Timber.e("Initialization failed")

@@ -28,7 +28,7 @@ android {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.30")
     implementation("androidx.appcompat:appcompat:1.1.0-alpha04")
     implementation("androidx.constraintlayout:constraintlayout:1.1.3")
 
@@ -40,6 +40,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.1")
 
     androidTestImplementation("androidx.test.ext:junit:1.1.0")
-    androidTestImplementation("androidx.test:runner:1.2.0-alpha03")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.2.0-alpha03")
+    androidTestImplementation("androidx.test:runner:1.2.0-alpha04")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.2.0-alpha04")
 }
