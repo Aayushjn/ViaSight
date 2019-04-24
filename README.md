@@ -1,7 +1,7 @@
 # ViaSight
 
 ViaSight is an accessibility Android launcher meant for visually 
-challenged individuals. Its purpose is to allow such individuals to use 
+impaired individuals. Its purpose is to allow such individuals to use 
 their smartphones in a similar way to others by employing 
 _sensory substitution_. 
 
