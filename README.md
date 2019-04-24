@@ -3,7 +3,12 @@
 ViaSight is an accessibility Android launcher meant for visually 
 impaired individuals. Its purpose is to allow such individuals to use 
 their smartphones in a similar way to others by employing 
-_sensory substitution_. 
+_sensory substitution_.
+
+#### Team members:
+* [Aayush Jain - 16IT101](https://www.github.com/Aayushjn)
+* [Aditi Rao - 16IT103](https://www.github.com/adira9)
+* [Vaishnavi Mishra - 16IT145](https://github.com/geekgeekvm)
 
 #### Installation instructions:
 The app works on devices running Android Marshmallow (API Level 21) up 
