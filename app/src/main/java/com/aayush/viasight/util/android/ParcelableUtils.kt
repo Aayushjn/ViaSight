@@ -1,24 +1,22 @@
-package com.aayush.viasight.util
+package com.aayush.viasight.util.android
 
 import android.os.Parcel
 import android.os.Parcelable
 import java.util.*
 
 // Parcelable Creator helper
-inline fun <reified T> parcelableCreator(
-    crossinline create: (Parcel) -> T) =
+inline fun <reified T> parcelableCreator(crossinline create: (Parcel) -> T) =
     object: Parcelable.Creator<T> {
-        override fun createFromParcel(source: Parcel) = create(source)
-
-        override fun newArray(size: Int) = arrayOfNulls<T>(size)
+        override fun createFromParcel(source: Parcel): T = create(source)
+        override fun newArray(size: Int): Array<T?> = arrayOfNulls(size)
     }
 
 // Parcel extensions
-fun Parcel.readBoolean() = readInt() == 1
+fun Parcel.readBool(): Boolean = readInt() == 1
 
-fun Parcel.writeBoolean(`val`: Boolean) = writeInt(if (`val`) 1 else 0)
+fun Parcel.writeBool(`val`: Boolean) = writeInt(if (`val`) 1 else 0)
 
-inline fun <T> Parcel.readNullable(reader: () -> T) =
+inline fun <T> Parcel.readNullable(reader: () -> T): T? =
     if (readInt() != 0) reader() else null
 
 inline fun <T> Parcel.writeNullable(value: T?, writer: (T) -> Unit) {
@@ -30,13 +28,13 @@ inline fun <T> Parcel.writeNullable(value: T?, writer: (T) -> Unit) {
     }
 }
 
-fun <T: Parcelable> Parcel.readTypedObjectCompat(creator: Parcelable.Creator<T>) =
+fun <T: Parcelable> Parcel.readTypedObjectCompat(creator: Parcelable.Creator<T>): T? =
     readNullable { creator.createFromParcel(this) }
 
 fun <T: Parcelable> Parcel.writeTypedObjectCompat(`val`: T?, flags: Int) =
     writeNullable(`val`) { it.writeToParcel(this, flags) }
 
-fun Parcel.readDate() =
+fun Parcel.readDate(): Date? =
     readNullable { Date(readLong()) }
 
 fun Parcel.writeDate(value: Date?) =
@@ -45,6 +43,5 @@ fun Parcel.writeDate(value: Date?) =
 // Parcelable default interface
 interface KParcelable: Parcelable {
     override fun writeToParcel(parcel: Parcel, flags: Int)
-
-    override fun describeContents() = 0
+    override fun describeContents(): Int = 0
 }

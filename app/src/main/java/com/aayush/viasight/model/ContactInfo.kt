@@ -1,15 +1,11 @@
 package com.aayush.viasight.model
 
 import android.os.Parcel
-import com.aayush.viasight.util.KParcelable
-import com.aayush.viasight.util.parcelableCreator
+import android.os.Parcelable
+import com.aayush.viasight.util.android.KParcelable
 
-data class ContactInfo(
-    var id: String,
-    var name: String,
-    var phoneNumber: String
-): KParcelable, Comparable<ContactInfo> {
-    constructor(parcel: Parcel): this(
+data class ContactInfo(var id: String, var name: String, var phoneNumber: String): KParcelable, Comparable<ContactInfo> {
+    private constructor(parcel: Parcel): this(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readString()!!
@@ -24,7 +20,8 @@ data class ContactInfo(
     override fun compareTo(other: ContactInfo) =
         compareValuesBy(this, other, { it.name }, { it.id })
 
-    companion object {
-        @JvmField val CREATOR = parcelableCreator(::ContactInfo)
+    companion object CREATOR: Parcelable.Creator<ContactInfo> {
+        override fun createFromParcel(source: Parcel): ContactInfo = ContactInfo(source)
+        override fun newArray(size: Int): Array<ContactInfo?> = arrayOfNulls(size)
     }
 }

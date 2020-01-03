@@ -1,4 +1,7 @@
-package com.aayush.viasight.util
+package com.aayush.viasight.util.common
+
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 
 const val PERMISSION_RECORD_AUDIO = 100
 const val PERMISSION_SETTINGS_REQUEST = 101
@@ -22,3 +25,5 @@ const val PREF_NOTIFICATIONS = "NotificationsPreference"
 val POSITIVE_WAVEFORM = longArrayOf(0, 150, 300, 150, 0)
 val NEGATIVE_WAVEFORM = longArrayOf(0, 150, 0, 150, 0)
 val NOTIFICATION_WAVEFORM = longArrayOf(0, 400, 200, 400, 0)
+
+val JSON: Json = Json(JsonConfiguration.Stable)

@@ -10,8 +10,6 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Vibrator
-import android.preference.PreferenceManager
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -19,7 +17,6 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.text.Spannable
 import android.text.SpannableStringBuilder
-import android.text.format.DateUtils
 import android.text.style.RelativeSizeSpan
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -29,31 +26,48 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.aayush.viasight.R
+import com.aayush.viasight.ViaSightApplication
 import com.aayush.viasight.model.NotificationInfo
-import com.aayush.viasight.util.*
-import com.aayush.viasight.util.listener.SwipeGestureListener
+import com.aayush.viasight.util.android.*
+import com.aayush.viasight.util.android.listener.SwipeGestureListener
+import com.aayush.viasight.util.common.*
 import kotlinx.android.synthetic.main.activity_main.*
 import timber.log.Timber
 import java.util.*
 
 class MainActivity: AppCompatActivity() {
-    private lateinit var sharedPreferences: SharedPreferences
-
-    private var notifications = mutableSetOf<NotificationInfo>()
-    private var tts: TextToSpeech? = null
-    private lateinit var gestureDetector: GestureDetector
+    private val sharedPreferences: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(this)
+    }
+    private var notifications: MutableSet<NotificationInfo> = mutableSetOf()
+    private val tts: TextToSpeech by lazy {
+        TextToSpeech(this) {
+            if (it == TextToSpeech.SUCCESS) {
+                val ttsLang: Int = tts.setLanguage(ViaSightApplication.defaultLocale)
+                if (ttsLang == TextToSpeech.LANG_MISSING_DATA || ttsLang == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Timber.e("Language not supported")
+                } else {
+                    Timber.i("Language supported")
+                }
+            } else {
+                toast("TTS initialization failed")
+            }
+        }
+    }
+    private val gestureDetector: GestureDetector by lazy {
+        GestureDetector(this, SwipeGestureListener(this))
+    }
     private lateinit var speechRecognizer: SpeechRecognizer
 
     private var sentToSettings = false
-
-    private val onNotice = NotificationBroadcastReceiver()
+    private val onNotice: NotificationBroadcastReceiver = NotificationBroadcastReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         checkPermissions()
         if (isLaunchedFirstTime(sharedPreferences)) {
             startTutorial()
@@ -63,15 +77,13 @@ class MainActivity: AppCompatActivity() {
 
         if (!NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
                 .contains(applicationContext.packageName)) {
-            Toast.makeText(this, "Enable notification access", Toast.LENGTH_SHORT).show()
-            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            toast("Enable notification access")
+            startActivity(
+                Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
 
-        val gestureListener = SwipeGestureListener()
-        gestureListener.setActivity(this)
-        gestureDetector = GestureDetector(this, gestureListener)
         LocalBroadcastManager.getInstance(applicationContext)
             .registerReceiver(onNotice, IntentFilter(INTENT_ACTION_NOTIFICATION))
     }
@@ -79,11 +91,9 @@ class MainActivity: AppCompatActivity() {
     override fun onPause() {
         super.onPause()
 
-        tts?.apply {
-            if (this.isSpeaking) {
-                this.stop()
-            }
-            this.shutdown()
+        with(tts) {
+            if (isSpeaking) stop()
+            shutdown()
         }
         saveNotifications(sharedPreferences, notifications)
     }
@@ -91,7 +101,7 @@ class MainActivity: AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
 
-        tts?.shutdown()
+        tts.shutdown()
         saveNotifications(sharedPreferences, notifications)
     }
 
@@ -113,20 +123,21 @@ class MainActivity: AppCompatActivity() {
                 proceedAfterPermission()
             } else {
                 if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
-                    val builder = AlertDialog.Builder(this)
+                    AlertDialog.Builder(this)
                         .setTitle("Need audio recording permission")
                         .setMessage("The app needs this permission to use speech recognition")
                         .setPositiveButton("Grant") { dialog, _ ->
                             dialog.cancel()
-                            ActivityCompat.requestPermissions(this,
+                            ActivityCompat.requestPermissions(
+                                this,
                                 arrayOf(Manifest.permission.RECORD_AUDIO),
                                 PERMISSION_RECORD_AUDIO
                             )
                         }
                         .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-                    builder.show()
+                        .show()
                 } else {
-                    Toast.makeText(this, "Unable to get permission", Toast.LENGTH_SHORT).show()
+                    toast("Unable to get permission")
                 }
             }
         } else if (requestCode == PERMISSION_CALL_PHONE) {
@@ -134,7 +145,7 @@ class MainActivity: AppCompatActivity() {
                 proceedAfterPermission()
             } else {
                 if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CALL_PHONE)) {
-                    val builder = AlertDialog.Builder(this)
+                    AlertDialog.Builder(this)
                         .setTitle("Need permission to make calls")
                         .setMessage("The app needs this permission to make calls")
                         .setPositiveButton("Grant") { dialog, _ ->
@@ -145,9 +156,9 @@ class MainActivity: AppCompatActivity() {
                             )
                         }
                         .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-                    builder.show()
+                        .show()
                 } else {
-                    Toast.makeText(this, "Unable to get permission", Toast.LENGTH_SHORT).show()
+                    toast("Unable to get permission")
                 }
             }
         }
@@ -161,7 +172,7 @@ class MainActivity: AppCompatActivity() {
                 PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
                 PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
+                toast("Permission not granted")
             } else {
                 proceedAfterPermission()
             }
@@ -176,7 +187,7 @@ class MainActivity: AppCompatActivity() {
                 PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
                 PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission not granted", Toast.LENGTH_SHORT).show()
+                toast("Permission not granted")
             } else {
                 proceedAfterPermission()
             }
@@ -210,8 +221,9 @@ class MainActivity: AppCompatActivity() {
                 override fun onError(error: Int) {}
 
                 override fun onResults(results: Bundle?) {
-                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    processResult(matches?.get(0))
+                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let {
+                        processResult(it[0])
+                    }
                 }
             })
 
@@ -229,109 +241,66 @@ class MainActivity: AppCompatActivity() {
         }
         if (notifications.isNotEmpty()) {
             Timber.d(notifications.toString())
-            tts = TextToSpeech(this, TextToSpeech.OnInitListener {
-                if (it == TextToSpeech.SUCCESS) {
-                    val result = this.tts?.setLanguage(Locale.US)
-                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                    }
-                    else {
-                        for (notification in notifications) {
-                            if (!notification.isRead) {
-                                speak(
-                                    "Title: ${notification.title}\nText: ${notification.text}",
-                                    UTTERANCE_ID_NOTIFICATION
-                                )
-                                notification.isRead = true
-                            }
-                        }
-                    }
+            notifications.forEach {
+                if (!it.isRead) {
+                    tts.speak("Title: ${it.title}\nText: ${it.text}", UTTERANCE_ID_NOTIFICATION)
+                    it.isRead = true
                 }
-                else {
-                    Timber.e("Initialization failed")
-                }
-            })
+            }
         } else {
-            initTTS("You do not have any pending notifications", UTTERANCE_ID_NOTIFICATION)
+            tts.speak("You do not have any pending notifications", UTTERANCE_ID_NOTIFICATION)
         }
     }
 
     fun stopReadingNotifications() {
         Timber.d("Stopping TTS")
 
-        tts?.apply {
-            if (this.isSpeaking) {
-                this.stop()
-            }
-        }
+        if (tts.isSpeaking) tts.stop()
     }
 
     private fun startTutorial() {
-        vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-        initTTS(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
+        getVibrator().vibrate(POSITIVE_WAVEFORM)
+        tts.speak(getString(R.string.tutorial_string), UTTERANCE_ID_TUTORIAL)
     }
 
-    private fun initTTS(message: String, utteranceId: String) {
-        if (tts == null) {
-            tts = TextToSpeech(
-                this,
-                TextToSpeech.OnInitListener {
-                    if (it == TextToSpeech.SUCCESS) {
-                        val result = this.tts?.setLanguage(Locale.US)
-                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            Toast.makeText(this, "This Language is not supported", Toast.LENGTH_SHORT).show()
-                        } else {
-                            speak(message, utteranceId)
-                        }
-                    } else {
-                        Timber.e("Initialization failed")
-                    }
-                }
-            )
-        } else {
-            speak(message, utteranceId)
-        }
-    }
-
-    private fun speak(message: String, utteranceId: String) =
-        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-
-    private fun processResult(match: String?) {
+    private fun processResult(match: String) {
         Timber.d(match)
 
-        if (match?.indexOf("what", ignoreCase = true) != -1) {
+        if (match.indexOf("what", ignoreCase = true) != -1) {
             when {
-                match?.indexOf("time", ignoreCase = true) != -1 -> {
-                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-                    initTTS("The time is " +
-                            DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_TIME),
-                        UTTERANCE_ID_DATE_TIME)
+                match.indexOf("time", ignoreCase = true) != -1 -> {
+                    getVibrator().vibrate(POSITIVE_WAVEFORM)
+                    tts.speak(
+                        "The time is " + Date().toSpeechString(this),
+                        UTTERANCE_ID_DATE_TIME
+                    )
                 }
                 match.indexOf("date", ignoreCase = true) != -1 -> {
-                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-                    initTTS("The date is " +
-                            DateUtils.formatDateTime(this, Date().time, DateUtils.FORMAT_SHOW_DATE),
-                        UTTERANCE_ID_DATE_TIME)
+                    getVibrator().vibrate(POSITIVE_WAVEFORM)
+                    tts.speak(
+                        "The date is " + Date().toSpeechString(this),
+                        UTTERANCE_ID_DATE_TIME
+                    )
                 }
                 match.indexOf("battery percentage", ignoreCase = true) != -1 -> {
-                    val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                    val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-                    initTTS("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
+                    val batteryManager: BatteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+                    val batteryLevel: Int = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    getVibrator().vibrate(POSITIVE_WAVEFORM)
+                    tts.speak("The battery is at $batteryLevel%", UTTERANCE_ID_MISC)
                 }
                 else -> {
-                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-                    initTTS("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
+                    getVibrator().vibrate(NEGATIVE_WAVEFORM)
+                    tts.speak("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
                 }
             }
         } else if (match.indexOf("call", ignoreCase = true) != -1) {
-            val contacts = getContacts(contentResolver)
+            val contacts = contentResolver.getContacts()
             val name: String
             try {
                 name = match.substring(5)
             } catch (e: StringIndexOutOfBoundsException) {
-                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-                initTTS("You didn't tell the name of a contact!", UTTERANCE_ID_MISC)
+                getVibrator().vibrate(NEGATIVE_WAVEFORM)
+                tts.speak("You didn't tell the name of a contact!", UTTERANCE_ID_MISC)
                 return
             }
             Timber.d(name)
@@ -344,22 +313,26 @@ class MainActivity: AppCompatActivity() {
                     contactFound = true
                     val callIntent = Intent(Intent.ACTION_CALL)
                     callIntent.data = Uri.parse("tel:" + it.phoneNumber)
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
+                        PackageManager.PERMISSION_GRANTED) {
+                        tts.speak("Grant call permission to make calls", UTTERANCE_ID_MISC)
+                    }
                     startActivity(callIntent)
                 }
             }
             if (!contactFound) {
-                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-                initTTS("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
+                getVibrator().vibrate(NEGATIVE_WAVEFORM)
+                tts.speak("Contact not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         } else if (match.indexOf("open", ignoreCase = true) != -1) {
-            val appList = getInstalledApps(packageManager)
+            val appList = packageManager.getInstalledApps()
             val appName: String
             try {
                 appName = match.substring(5)
             }
             catch (e: StringIndexOutOfBoundsException) {
-                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-                initTTS("You didn't tell the name of an app!", UTTERANCE_ID_MISC)
+                getVibrator().vibrate(NEGATIVE_WAVEFORM)
+                tts.speak("You didn't tell the name of an app!", UTTERANCE_ID_MISC)
                 return
             }
             Timber.d(appName)
@@ -370,13 +343,13 @@ class MainActivity: AppCompatActivity() {
                     Timber.d(it.toString())
                     appFound = true
                     startActivity(it.launchIntent)
-                    vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-                    initTTS("Opening $appName", UTTERANCE_ID_MISC)
+                    getVibrator().vibrate(POSITIVE_WAVEFORM)
+                    tts.speak("Opening $appName", UTTERANCE_ID_MISC)
                 }
             }
             if (!appFound) {
-                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-                initTTS("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
+                getVibrator().vibrate(NEGATIVE_WAVEFORM)
+                tts.speak("App not found. Are you sure you said that right?", UTTERANCE_ID_MISC)
             }
         } else if (match.indexOf("remove", ignoreCase = true) != -1) {
             if (match.indexOf("notifications", ignoreCase = true) != -1) {
@@ -384,8 +357,8 @@ class MainActivity: AppCompatActivity() {
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancelAll()
                 textView.text = ""
-                vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, POSITIVE_WAVEFORM)
-                initTTS("Notifications cleared", UTTERANCE_ID_NOTIFICATION)
+                getVibrator().vibrate(POSITIVE_WAVEFORM)
+                tts.speak("Notifications cleared", UTTERANCE_ID_NOTIFICATION)
             }
         } else if (match.indexOf("play") != -1) {
             if (match.indexOf("tutorial") != -1) {
@@ -401,8 +374,8 @@ class MainActivity: AppCompatActivity() {
                 }
             }
         } else {
-            vibrate(getSystemService(Context.VIBRATOR_SERVICE) as Vibrator, NEGATIVE_WAVEFORM)
-            initTTS("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
+            getVibrator().vibrate(NEGATIVE_WAVEFORM)
+            tts.speak("I didn't quite get that! Could you repeat it?", UTTERANCE_ID_MISC)
         }
     }
 
@@ -412,7 +385,7 @@ class MainActivity: AppCompatActivity() {
                 PackageManager.PERMISSION_GRANTED) {
                 when {
                     ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO) -> {
-                        val builder = AlertDialog.Builder(this)
+                        AlertDialog.Builder(this)
                             .setTitle("Need audio recording permission")
                             .setMessage("The app needs this permission to use speech recognition")
                             .setPositiveButton("Grant") { dialog, _ ->
@@ -423,10 +396,10 @@ class MainActivity: AppCompatActivity() {
                                 )
                             }
                             .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-                        builder.show()
+                            .show()
                     }
                     sharedPreferences.getBoolean(Manifest.permission.RECORD_AUDIO, false) -> {
-                        val builder = AlertDialog.Builder(this)
+                        AlertDialog.Builder(this)
                             .setTitle("Need audio recording permission")
                             .setMessage("The app needs this permission to use speech recognition")
                             .setPositiveButton("Grant") { dialog, _ ->
@@ -435,27 +408,30 @@ class MainActivity: AppCompatActivity() {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                 val uri = Uri.fromParts("package", packageName, null)
                                 intent.data = uri
-                                startActivityForResult(intent, PERMISSION_SETTINGS_REQUEST)
+                                startActivityForResult(intent,
+                                    PERMISSION_SETTINGS_REQUEST
+                                )
                                 Toast.makeText(this,
                                     "Go to permission to grant audio permission",
                                     Toast.LENGTH_LONG)
                                     .show()
                             }
                             .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-                        builder.show()
+                            .show()
                     }
-                    else -> ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),
-                        PERMISSION_RECORD_AUDIO)
+                    else -> ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.RECORD_AUDIO),
+                        PERMISSION_RECORD_AUDIO
+                    )
                 }
             }
-            sharedPreferences.edit()
-                .putBoolean(Manifest.permission.RECORD_AUDIO, true)
-                .apply()
+            sharedPreferences.edit { putBoolean(Manifest.permission.RECORD_AUDIO, true) }
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) !=
                 PackageManager.PERMISSION_GRANTED) {
                 when {
                     ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CALL_PHONE) -> {
-                        val builder = AlertDialog.Builder(this)
+                        AlertDialog.Builder(this)
                             .setTitle("Need permission to make calls")
                             .setMessage("The app needs this permission to make calls")
                             .setPositiveButton("Grant") { dialog, _ ->
@@ -466,7 +442,7 @@ class MainActivity: AppCompatActivity() {
                                 )
                             }
                             .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-                        builder.show()
+                            .show()
                     }
                     sharedPreferences.getBoolean(Manifest.permission.CALL_PHONE, false) -> {
                         val builder = AlertDialog.Builder(this)
@@ -478,7 +454,9 @@ class MainActivity: AppCompatActivity() {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                 val uri = Uri.fromParts("package", packageName, null)
                                 intent.data = uri
-                                startActivityForResult(intent, PERMISSION_SETTINGS_REQUEST)
+                                startActivityForResult(intent,
+                                    PERMISSION_SETTINGS_REQUEST
+                                )
                                 Toast.makeText(this,
                                     "Go to permission to grant permission to make calls",
                                     Toast.LENGTH_LONG)
@@ -487,83 +465,84 @@ class MainActivity: AppCompatActivity() {
                             .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
                         builder.show()
                     }
-                    else -> ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE),
-                        PERMISSION_CALL_PHONE)
+                    else -> ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.CALL_PHONE),
+                        PERMISSION_CALL_PHONE
+                    )
                 }
             }
-            sharedPreferences.edit()
-                .putBoolean(Manifest.permission.CALL_PHONE, true)
-                .apply()
+            sharedPreferences.edit { putBoolean(Manifest.permission.CALL_PHONE, true) }
         } else {
             proceedAfterPermission()
         }
     }
 
-    private fun proceedAfterPermission() =
-        Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+    private fun proceedAfterPermission() = toast("Permission granted")
 
     inner class NotificationBroadcastReceiver: BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val notificationInfo = intent.getParcelableExtra<NotificationInfo>(EXTRA_NOTIFICATION)
-            notifications.add(notificationInfo)
+            val notificationInfo: NotificationInfo? = intent.getParcelableExtra(EXTRA_NOTIFICATION)
+            notificationInfo?.let {
+                notifications.add(it)
 
-            val notificationString = "Package: ${notificationInfo.packageName}\nTitle: ${notificationInfo.title}\n" +
-                    "Text: ${notificationInfo.text}\nTime: ${notificationInfo.date}\n\n"
-            val spannableStringBuilder = SpannableStringBuilder(notificationString).apply {
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    0,
-                    8,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    8,
-                    notificationString.indexOf("Title"),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    notificationString.indexOf("Title"),
-                    notificationString.indexOf("Title") + 6,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    notificationString.indexOf("Title") + 6,
-                    notificationString.indexOf("Text"),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    notificationString.indexOf("Text"),
-                    notificationString.indexOf("Text") + 5,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    notificationString.indexOf("Text") + 5,
-                    notificationString.indexOf("Time"),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(2f),
-                    notificationString.indexOf("Time"),
-                    notificationString.indexOf("Time") + 5,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                setSpan(
-                    RelativeSizeSpan(1.5f),
-                    notificationString.indexOf("Time") + 5,
-                    notificationString.length,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+                val notificationString = "Package: ${it.packageName}\nTitle: ${it.title}\nText: ${it.text}\nTime: ${it.date}\n\n"
+                val spannableStringBuilder = SpannableStringBuilder(notificationString).apply {
+                    setSpan(
+                        RelativeSizeSpan(2f),
+                        0,
+                        8,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(1.5f),
+                        8,
+                        notificationString.indexOf("Title"),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(2f),
+                        notificationString.indexOf("Title"),
+                        notificationString.indexOf("Title") + 6,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(1.5f),
+                        notificationString.indexOf("Title") + 6,
+                        notificationString.indexOf("Text"),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(2f),
+                        notificationString.indexOf("Text"),
+                        notificationString.indexOf("Text") + 5,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(1.5f),
+                        notificationString.indexOf("Text") + 5,
+                        notificationString.indexOf("Time"),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(2f),
+                        notificationString.indexOf("Time"),
+                        notificationString.indexOf("Time") + 5,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    setSpan(
+                        RelativeSizeSpan(1.5f),
+                        notificationString.indexOf("Time") + 5,
+                        notificationString.length,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+                textView.textSize = 20f
+                textView.setTextColor(Color.parseColor("#000000"))
+                textView.text = spannableStringBuilder.insert(0, textView.text)
+
+                Timber.d(it.toString())
             }
-            textView.textSize = 20f
-            textView.setTextColor(Color.parseColor("#000000"))
-            textView.text = spannableStringBuilder.insert(0, textView.text)
-
-            Timber.d(notificationInfo.toString())
         }
     }
 }

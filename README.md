@@ -25,7 +25,7 @@ with
 ```kotlin
 classpath("com.android.tools.build:gradle:3.2.0")
 ```
-in [build.gradle.kts](build.gradle.kts).
+in [build.gradle.kts](build.gradle).
 
 #### Technical details:
 Sensory substitution is done here by providing different vibration 

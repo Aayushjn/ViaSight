@@ -2,17 +2,14 @@ package com.aayush.viasight.model
 
 import android.content.Intent
 import android.os.Parcel
-import com.aayush.viasight.util.KParcelable
-import com.aayush.viasight.util.parcelableCreator
-import com.aayush.viasight.util.readTypedObjectCompat
-import com.aayush.viasight.util.writeTypedObjectCompat
+import android.os.Parcelable
+import com.aayush.viasight.util.android.KParcelable
+import com.aayush.viasight.util.android.parcelableCreator
+import com.aayush.viasight.util.android.readTypedObjectCompat
+import com.aayush.viasight.util.android.writeTypedObjectCompat
 
-data class AppInfo(
-    var appName: String,
-    var packageName: String,
-    var launchIntent: Intent?
-): KParcelable, Comparable<AppInfo> {
-    constructor(parcel: Parcel) : this(
+data class AppInfo(var appName: String, var packageName: String, var launchIntent: Intent?): KParcelable, Comparable<AppInfo> {
+    private constructor(parcel: Parcel): this(
         parcel.readString()!!,
         parcel.readString()!!,
         parcel.readTypedObjectCompat(parcelableCreator { Intent() })!!
@@ -26,7 +23,8 @@ data class AppInfo(
 
     override fun compareTo(other: AppInfo) = compareValuesBy(this, other, { it.appName }, { it.packageName })
 
-    companion object {
-        @JvmField val CREATOR = parcelableCreator(::AppInfo)
+    companion object CREATOR: Parcelable.Creator<AppInfo> {
+        override fun createFromParcel(source: Parcel): AppInfo = AppInfo(source)
+        override fun newArray(size: Int): Array<AppInfo?> = arrayOfNulls(size)
     }
 }
