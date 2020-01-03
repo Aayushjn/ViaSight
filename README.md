@@ -12,7 +12,7 @@ _sensory substitution_.
 
 #### Installation instructions:
 The app works on devices running Android Marshmallow (API Level 21) up 
-to Android 10 (API Level 29). The APK file can be found in [apk](apk/) 
+to Android 10 (API Level 29). The APK file can be found in [apk](apk) 
 folder. Simply copy the file onto a compatible Android device and 
 install.
 
