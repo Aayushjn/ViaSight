@@ -12,20 +12,9 @@ _sensory substitution_.
 
 #### Installation instructions:
 The app works on devices running Android Marshmallow (API Level 21) up 
-to Android Q (API Level 28). The APK file can be found in [apk](apk/) 
+to Android 10 (API Level 29). The APK file can be found in [apk](apk/) 
 folder. Simply copy the file onto a compatible Android device and 
 install.
-
-The code itself requires Android Studio 3.4 and above to work. If using 
-an older version, replace 
-```kotlin
-classpath("com.android.tools.build:gradle:3.4.0")
-```
-with 
-```kotlin
-classpath("com.android.tools.build:gradle:3.2.0")
-```
-in [build.gradle.kts](build.gradle).
 
 #### Technical details:
 Sensory substitution is done here by providing different vibration 
